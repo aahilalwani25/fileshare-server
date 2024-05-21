@@ -24,6 +24,19 @@ def handle_connect(name):
         if client['id']== request.sid:
             client['name'] = name
 
+@socketio.on('disconnect')
+def handle_disconnect():
+    disconnected_client = None
+    for client in connected_clients:
+        if client['id'] == request.sid:
+            disconnected_client = client
+            connected_clients.remove(client)
+            break
+
+    if disconnected_client:
+        print(f"Client disconnected: {disconnected_client['name']}")
+        emit('client-disconnected', {'name': disconnected_client['name']}, broadcast=True)
+
 # Socket.IO event for file upload
 # @socketio.on('file_upload')
 # def handle_file_upload(data):
@@ -48,6 +61,28 @@ def show_online_clients():
 def receive_socket_info(data):
     client_socket= data['socket']
     print('Received socket: ',client_socket)
+
+
+@socketio.on('send-file')
+def receive_file(data):
+    filename = data['filename']
+    file_data = data['file']
+    recipient_sid = data['recipient']
+
+    # Save the file temporarily
+    with open(filename, 'wb') as f:
+        f.write(file_data.encode('latin-1'))  # Ensure proper encoding
+
+    # Check if the recipient is connected
+    recipient = next((client for client in connected_clients if client['id'] == recipient_sid), None)
+    if recipient:
+        # Send the file to the specific client
+        with open(filename, 'rb') as f:
+            file_content = f.read()
+            emit('file-received', {'filename': filename, 'file': file_content.decode('latin-1')}, room=recipient_sid)
+            print(f"File {filename} sent to client {recipient_sid}")
+    else:
+        print(f"Client '{recipient_sid}' not found or not connected.")
     
     
 
