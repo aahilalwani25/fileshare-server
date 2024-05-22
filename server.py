@@ -12,17 +12,19 @@ def handle_connect():
     print(f"Client connected: {request.sid}")
     client={
         'id':request.sid,
-        'name': None
+        'name': None,
+        #'clientSocketID': None
     }
     connected_clients.append(client)
 
 @socketio.on('set-name')
-def handle_connect(name):
+def handle_connect(data):
     print(f"Client connected: {request.sid}")
 
     for client in connected_clients:
         if client['id']== request.sid:
-            client['name'] = name
+            client['name'] = data['name']
+            #client['clientSocketID']= data['clientSocketID']
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -57,29 +59,26 @@ def handle_disconnect():
 def show_online_clients():
     emit('online-clients',{'clients':connected_clients})
 
-@socketio.on('send-socket-info')
-def receive_socket_info(data):
-    client_socket= data['socket']
-    print('Received socket: ',client_socket)
+# @socketio.on('send-socket-info')
+# def receive_socket_info(data):
+#     client_socket= data['socket']
+#     print('Received socket: ',client_socket)
 
 
 @socketio.on('send-file')
 def receive_file(data):
     filename = data['filename']
-    file_data = data['file']
+    file_data = data['file_data']
     recipient_sid = data['recipient']
-
-    # Save the file temporarily
-    with open(filename, 'wb') as f:
-        f.write(file_data.encode('latin-1'))  # Ensure proper encoding
 
     # Check if the recipient is connected
     recipient = next((client for client in connected_clients if client['id'] == recipient_sid), None)
     if recipient:
         # Send the file to the specific client
+        print(recipient)
         with open(filename, 'rb') as f:
-            file_content = f.read()
-            emit('file-received', {'filename': filename, 'file': file_content.decode('latin-1')}, room=recipient_sid)
+            #file_content = f.read()
+            emit('file-received', {'filename': filename, 'file': file_data}, room=recipient_sid)
             print(f"File {filename} sent to client {recipient_sid}")
     else:
         print(f"Client '{recipient_sid}' not found or not connected.")
