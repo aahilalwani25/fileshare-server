@@ -68,7 +68,7 @@ def show_online_clients():
 @socketio.on('send-file')
 def receive_file(data):
     filename = data['filename']
-    file_data = data['file_data']
+    file_data = data['file_data'] #base64
     recipient_sid = data['recipient']
 
     # Check if the recipient is connected
@@ -76,10 +76,10 @@ def receive_file(data):
     if recipient:
         # Send the file to the specific client
         print(recipient)
-        with open(filename, 'rb') as f:
+        #with open(filename, 'rb') as f:
             #file_content = f.read()
-            emit('file-received', {'filename': filename, 'file': file_data}, room=recipient_sid)
-            print(f"File {filename} sent to client {recipient_sid}")
+        emit('file-received', {'filename': filename, 'file': file_data}, room=recipient_sid)
+        print(f"File {filename} sent to client {recipient_sid}")
     else:
         print(f"Client '{recipient_sid}' not found or not connected.")
     
